@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shopping Agent — IBM watsonx Orchestrate</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #ffffff;
+      --surface: #f7f8fa;
+      --border:  #e5e7eb;
+      --text:    #1f2328;
+      --muted:   #57606a;
+      --accent:  #2563eb;
+      --red:     #dc2626;
+    }
+
+    html { height: 100%; }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      /* fill exactly the visible viewport — works on all browsers */
+      min-height: 100vh;
+      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    /* ═══ HEADER ═══ */
+    header {
+      flex-shrink: 0;
+      height: 54px;
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 14px;
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px;
+    }
+    .hamburger span { display: block; width: 20px; height: 2px; background: #fff; border-radius: 2px; }
+
+    .logo-wrap { display: flex; align-items: center; gap: 10px; }
+    .logo-wrap svg { width: 26px; height: 26px; flex-shrink: 0; }
+    .brand-name { font-size: 14px; font-weight: 700; color: #fff; }
+    .brand-sub  { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; }
+
+    .h-divider { width: 1px; height: 20px; background: #334155; margin: 0 2px; }
+
+    .status-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #94a3b8; }
+    .status-dot  { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+
+    .h-spacer { flex: 1; }
+
+    .ai-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: #1e3a5f; border: 1px solid #2563eb55;
+      border-radius: 20px; padding: 4px 11px;
+      font-size: 11px; color: #93c5fd;
+    }
+
+    /* ═══ PROMO BAR ═══ */
+    .promo-bar {
+      flex-shrink: 0;
+      background: #2563eb; color: #fff;
+      font-size: 11px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      gap: 20px; padding: 5px 12px;
+      flex-wrap: wrap;
+    }
+    .promo-bar span { display: flex; align-items: center; gap: 4px; }
+
+    /* ═══ SHELL ═══ */
+    .shell {
+      display: flex;
+      flex: 1;
+      min-height: 0; /* critical: lets flex children shrink below content size */
+      overflow: hidden;
+    }
+
+    /* ═══ SIDEBAR ═══ */
+    .sidebar {
+      width: 248px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform .25s;
+    }
+
+    .sidebar-hd {
+      flex-shrink: 0;
+      background: #0f172a;
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .sidebar-hd h2 { font-size: 12px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .06em; }
+    .sidebar-hd p  { font-size: 10.5px; color: #94a3b8; margin-top: 2px; }
+
+    .cat-tabs {
+      flex-shrink: 0;
+      display: flex; gap: 5px;
+      padding: 8px 10px;
+      overflow-x: auto; scrollbar-width: none;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .cat-tabs::-webkit-scrollbar { display: none; }
+    .cat-btn {
+      flex-shrink: 0;
+      padding: 3px 9px; border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg); font-size: 11px; color: var(--muted);
+      cursor: pointer; transition: all .12s;
+    }
+    .cat-btn.active, .cat-btn:hover { background: #0f172a; border-color: #0f172a; color: #fff; }
+
+    .product-list {
+      flex: 1; overflow-y: auto; padding: 8px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .product-list::-webkit-scrollbar { width: 3px; }
+    .product-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .p-card {
+      display: flex; align-items: center; gap: 9px;
+      padding: 8px 9px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--bg);
+      cursor: pointer; transition: border-color .12s, transform .1s;
+    }
+    .p-card:hover { border-color: var(--accent); transform: translateX(3px); }
+
+    .p-img {
+      width: 44px; height: 44px; border-radius: 8px;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .p-img svg { width: 32px; height: 32px; }
+
+    .p-info { flex: 1; min-width: 0; }
+    .p-name { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .p-cat  { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+    .p-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; }
+    .p-price { font-size: 12px; font-weight: 700; color: var(--accent); }
+    .p-stars { font-size: 9.5px; color: #f59e0b; letter-spacing: -1px; }
+
+    /* ═══ MAIN ═══ */
+    .main {
+      flex: 1; min-width: 0; min-height: 0;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    /* Hero */
+    .hero {
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 55%, #1d4ed8 100%);
+      padding: 16px 20px 14px;
+    }
+    .hero-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .hero h1  { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.02em; }
+    .hero p   { font-size: 12px; color: #94a3b8; margin-top: 4px; line-height: 1.55; max-width: 420px; }
+    .hero-stats { display: flex; gap: 10px; flex-shrink: 0; }
+    .stat-box {
+      background: #ffffff12; border: 1px solid #ffffff18;
+      border-radius: 9px; padding: 7px 12px; text-align: center;
+    }
+    .stat-box strong { display: block; font-size: 15px; font-weight: 800; color: #fff; }
+    .stat-box span   { font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+
+    .quick-asks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+    .chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 11px; border-radius: 20px;
+      border: 1px solid #ffffff22; background: #ffffff0e;
+      font-size: 11.5px; color: #cbd5e1; cursor: pointer;
+      transition: background .12s, border-color .12s;
+    }
+    .chip:hover { background: #ffffff1e; border-color: #60a5fa; color: #fff; }
+    .chip-dot { width: 5px; height: 5px; border-radius: 50%; background: #60a5fa; flex-shrink: 0; }
+
+    /* Deals strip */
+    .deals-strip {
+      flex-shrink: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 14px;
+    }
+    .deals-lbl {
+      font-size: 9px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted); margin-bottom: 7px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .deals-lbl::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    .deal-cards {
+      display: flex; gap: 9px;
+      overflow-x: auto; padding-bottom: 2px;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    .deal-cards::-webkit-scrollbar { height: 3px; }
+    .deal-cards::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .deal-card {
+      flex-shrink: 0; width: 128px;
+      border: 1px solid var(--border); border-radius: 9px;
+      padding: 8px; background: var(--bg);
+      cursor: pointer; position: relative;
+      transition: border-color .12s, transform .12s;
+    }
+    .deal-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+    .deal-badge {
+      position: absolute; top: 6px; right: 6px;
+      background: var(--red); color: #fff;
+      font-size: 8.5px; font-weight: 700;
+      padding: 2px 5px; border-radius: 8px;
+    }
+    .deal-img {
+      width: 100%; height: 60px; border-radius: 6px;
+      margin-bottom: 7px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .deal-img svg { width: 38px; height: 38px; }
+    .deal-name  { font-size: 11px; font-weight: 600; color: var(--text); }
+    .deal-price { display: flex; align-items: baseline; gap: 4px; margin-top: 2px; }
+    .deal-now   { font-size: 12.5px; font-weight: 700; color: var(--accent); }
+    .deal-was   { font-size: 10px; color: var(--muted); text-decoration: line-through; }
+    .deal-stars { font-size: 9.5px; color: #f59e0b; margin-top: 1px; }
+
+    /* Chat */
+    .chat-area {
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .chat-bar {
+      flex-shrink: 0;
+      padding: 6px 14px; font-size: 11px; color: var(--muted);
+      border-bottom: 1px solid var(--border); background: var(--surface);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .chat-bar-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+
+    #root { flex: 1; min-height: 0; overflow: auto; }
+
+    /* overlay */
+    .overlay { display: none; position: fixed; inset: 0; background: #0007; z-index: 90; }
+    .overlay.open { display: block; }
+
+    footer {
+      flex-shrink: 0;
+      text-align: center; padding: 5px;
+      font-size: 10px; color: #9ca3af;
+      border-top: 1px solid var(--border); background: var(--bg);
+    }
+
+    @media (max-width: 768px) {
+      .hamburger { display: flex; }
+      .h-divider, .status-pill { display: none; }
+      .sidebar {
+        position: fixed; left: 0; top: 54px; bottom: 0;
+        z-index: 95; transform: translateX(-100%);
+        background: var(--bg);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .overlay.open { display: block; }
+      .hero { padding: 12px 12px 10px; }
+      .hero-stats { display: none; }
+    }
+    @media (max-width: 480px) {
+      .brand-sub, .ai-badge span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <button class="hamburger" id="menuBtn" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="logo-wrap">
+    <svg viewBox="0 0 28 28" fill="none">
+      <rect x="0" y="3"  width="28" height="3" rx="1" fill="#1f70c1"/>
+      <rect x="3" y="8"  width="22" height="3" rx="1" fill="#1f70c1"/>
+      <rect x="3" y="13" width="22" height="3" rx="1" fill="#1f70c1"/>
+      <rect x="0" y="18" width="28" height="3" rx="1" fill="#1f70c1"/>
+      <rect x="3" y="23" width="22" height="3" rx="1" fill="#1f70c1"/>
+    </svg>
+    <div>
+      <div class="brand-name">watsonx Orchestrate</div>
+      <div class="brand-sub">Shopping Agent</div>
+    </div>
+  </div>
+  <div class="h-divider"></div>
+  <div class="status-pill">
+    <span class="status-dot"></span>
+    <span>Agent online</span>
+  </div>
+  <div class="h-spacer"></div>
+  <div class="ai-badge">
+    <svg viewBox="0 0 12 12" fill="none" width="12" height="12">
+      <circle cx="6" cy="6" r="5.25" stroke="#60a5fa" stroke-width="1.5"/>
+      <path d="M4 6l1.5 1.5L8 4" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>AI-Powered Shopping</span>
+  </div>
+</header>
+
+<!-- PROMO BAR -->
+<div class="promo-bar">
+  <span>🚚 <strong>Free shipping</strong> on orders over $50</span>
+  <span>↩ <strong>Easy returns</strong> within 30 days</span>
+  <span>⭐ <strong>24/7 AI support</strong> via this agent</span>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-hd">
+      <h2>🛒 Products</h2>
+      <p>Click any item to ask the agent</p>
+    </div>
+    <div class="cat-tabs">
+      <button class="cat-btn active">All</button>
+      <button class="cat-btn">Clothing</button>
+      <button class="cat-btn">Electronics</button>
+      <button class="cat-btn">Accessories</button>
+      <button class="cat-btn">Footwear</button>
+    </div>
+
+    <div class="product-list">
+
+      <div class="p-card">
+        <div class="p-img" style="background:#dbeafe">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M20 8L10 20l8 2v32h28V22l8-2L44 8l-6 6q-6 4-12 0z" fill="#bfdbfe" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M26 14q6-4 12 0" stroke="#2563eb" stroke-width="2" fill="none"/>
+            <line x1="24" y1="28" x2="24" y2="46" stroke="#93c5fd" stroke-width="1.5"/>
+            <line x1="32" y1="24" x2="32" y2="46" stroke="#93c5fd" stroke-width="1.5"/>
+            <line x1="40" y1="28" x2="40" y2="46" stroke="#93c5fd" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Casual Shirt</div>
+          <div class="p-cat">Clothing</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$29.99</div>
+          <div class="p-stars">★★★★☆</div>
+        </div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#fef9c3">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M8 40Q10 30 22 28L36 26Q44 24 50 30L56 38Q50 44 8 44Z" fill="#fde68a" stroke="#ca8a04" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M22 28L26 20L32 24" stroke="#ca8a04" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <rect x="8" y="42" width="48" height="5" rx="2.5" fill="#fcd34d" stroke="#ca8a04" stroke-width="1.2"/>
+            <path d="M24 32 Q30 30 36 32" stroke="#92400e" stroke-width="1" fill="none"/>
+            <path d="M28 36 Q34 34 40 36" stroke="#92400e" stroke-width="1" fill="none"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Sneakers</div>
+          <div class="p-cat">Footwear</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$64.99</div>
+          <div class="p-stars">★★★★★</div>
+        </div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#fce7f3">
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="12" y="24" width="40" height="28" rx="5" fill="#fbcfe8" stroke="#db2777" stroke-width="2"/>
+            <path d="M22 24Q22 13 32 13Q42 13 42 24" stroke="#db2777" stroke-width="2" fill="none"/>
+            <circle cx="32" cy="38" r="3.5" fill="#db2777"/>
+            <line x1="28.5" y1="38" x2="20" y2="38" stroke="#db2777" stroke-width="1.2"/>
+            <line x1="35.5" y1="38" x2="44" y2="38" stroke="#db2777" stroke-width="1.2"/>
+            <rect x="16" y="36" width="32" height="3" rx="1.5" fill="#f9a8d4" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Handbag</div>
+          <div class="p-cat">Accessories</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$49.99</div>
+          <div class="p-stars">★★★★☆</div>
+        </div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#d1fae5">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M16 34Q16 16 32 16Q48 16 48 34" stroke="#1f2328" stroke-width="2.2" fill="none"/>
+            <rect x="10" y="33" width="10" height="17" rx="4" fill="#a7f3d0" stroke="#059669" stroke-width="2"/>
+            <rect x="44" y="33" width="10" height="17" rx="4" fill="#a7f3d0" stroke="#059669" stroke-width="2"/>
+            <line x1="20" y1="40" x2="44" y2="40" stroke="#6ee7b7" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Headphones</div>
+          <div class="p-cat">Electronics</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$89.99</div>
+          <div class="p-stars">★★★★★</div>
+        </div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#f1f5f9">
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="23" y="7"  width="18" height="9" rx="2.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>
+            <rect x="23" y="48" width="18" height="9" rx="2.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>
+            <circle cx="32" cy="32" r="15" fill="#f8fafc" stroke="#64748b" stroke-width="1.8"/>
+            <circle cx="32" cy="32" r="11" fill="#fff" stroke="#94a3b8" stroke-width="1.2"/>
+            <circle cx="32" cy="32" r="7"  fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+            <line x1="32" y1="32" x2="32" y2="24" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+            <line x1="32" y1="32" x2="39" y2="35" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="1.8" fill="#0f172a"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Smart Watch</div>
+          <div class="p-cat">Electronics</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$119.99</div>
+          <div class="p-stars">★★★★★</div>
+        </div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#e0f2fe">
+          <svg viewBox="0 0 64 64" fill="none">
+            <rect x="9" y="13" width="46" height="30" rx="3.5" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+            <rect x="13" y="17" width="38" height="22" rx="1.5" fill="#7dd3fc" stroke="#0284c7" stroke-width="1.2"/>
+            <!-- screen content lines -->
+            <line x1="18" y1="22" x2="46" y2="22" stroke="#0ea5e9" stroke-width="1"/>
+            <line x1="18" y1="26" x2="38" y2="26" stroke="#7dd3fc" stroke-width="1"/>
+            <line x1="18" y1="30" x2="42" y2="30" stroke="#7dd3fc" stroke-width="1"/>
+            <path d="M4 43L60 43L56 50L8 50Z" fill="#e0f2fe" stroke="#0284c7" stroke-width="2" stroke-linejoin="round"/>
+            <rect x="26" y="43" width="12" height="2.5" rx="1" fill="#0284c7"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Laptop</div>
+          <div class="p-cat">Electronics</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$799.99</div>
+          <div class="p-stars">★★★★☆</div>
+        </div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#fef3c7">
+          <svg viewBox="0 0 64 64" fill="none">
+            <line x1="4"  y1="30" x2="15" y2="30" stroke="#92400e" stroke-width="2.2" stroke-linecap="round"/>
+            <line x1="49" y1="30" x2="60" y2="30" stroke="#92400e" stroke-width="2.2" stroke-linecap="round"/>
+            <rect x="15" y="23" width="14" height="13" rx="6.5" fill="#fde68a" stroke="#92400e" stroke-width="2"/>
+            <rect x="35" y="23" width="14" height="13" rx="6.5" fill="#fde68a" stroke="#92400e" stroke-width="2"/>
+            <path d="M29 30 Q32 26 35 30" stroke="#92400e" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- lens tint -->
+            <rect x="16" y="24" width="12" height="11" rx="6" fill="#f59e0b" opacity="0.25"/>
+            <rect x="36" y="24" width="12" height="11" rx="6" fill="#f59e0b" opacity="0.25"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Sunglasses</div>
+          <div class="p-cat">Accessories</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$34.99</div>
+          <div class="p-stars">★★★☆☆</div>
+        </div>
+      </div>
+
+      <div class="p-card">
+        <div class="p-img" style="background:#dcfce7">
+          <svg viewBox="0 0 64 64" fill="none">
+            <path d="M6 42Q8 32 20 30L34 28Q42 26 48 32L54 40Q48 46 6 46Z" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M20 30L24 22L30 26" stroke="#16a34a" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <rect x="6" y="44" width="48" height="5" rx="2.5" fill="#86efac" stroke="#16a34a" stroke-width="1.2"/>
+            <path d="M28 32 Q34 30 40 31" stroke="#15803d" stroke-width="1.2" fill="none"/>
+            <path d="M26 36 Q32 34 38 35" stroke="#15803d" stroke-width="1.2" fill="none"/>
+          </svg>
+        </div>
+        <div class="p-info">
+          <div class="p-name">Running Shoes</div>
+          <div class="p-cat">Footwear</div>
+        </div>
+        <div class="p-right">
+          <div class="p-price">$79.99</div>
+          <div class="p-stars">★★★★★</div>
+        </div>
+      </div>
+
+    </div><!-- /product-list -->
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-row">
+        <div>
+          <h1>Your AI Shopping Agent</h1>
+          <p>Find products, compare prices, check stock, track orders &amp; get personalised recommendations — all in one chat.</p>
+          <div class="quick-asks">
+            <div class="chip"><span class="chip-dot"></span>Find a laptop under $900</div>
+            <div class="chip"><span class="chip-dot"></span>Compare headphones</div>
+            <div class="chip"><span class="chip-dot"></span>What's trending today?</div>
+            <div class="chip"><span class="chip-dot"></span>Track my order</div>
+            <div class="chip"><span class="chip-dot"></span>Best deals right now</div>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-box"><strong>10K+</strong><span>Products</span></div>
+          <div class="stat-box"><strong>24/7</strong><span>AI Support</span></div>
+          <div class="stat-box"><strong>4.9★</strong><span>Rated</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deals strip -->
+    <div class="deals-strip">
+      <div class="deals-lbl">🔥 Hot Deals Today</div>
+      <div class="deal-cards">
+
+        <!-- Laptop deal -->
+        <div class="deal-card">
+          <div class="deal-badge">-25%</div>
+          <div class="deal-img" style="background:#e0f2fe">
+            <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+              <rect x="9" y="13" width="46" height="30" rx="3.5" fill="#bae6fd" stroke="#0284c7" stroke-width="2"/>
+              <rect x="13" y="17" width="38" height="22" rx="1.5" fill="#7dd3fc" stroke="#0284c7" stroke-width="1.2"/>
+              <line x1="18" y1="22" x2="46" y2="22" stroke="#0ea5e9" stroke-width="1"/>
+              <line x1="18" y1="27" x2="38" y2="27" stroke="#7dd3fc" stroke-width="1"/>
+              <path d="M4 43L60 43L56 50L8 50Z" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+              <rect x="26" y="43" width="12" height="2.5" rx="1" fill="#0284c7"/>
+            </svg>
+          </div>
+          <div class="deal-name">Laptop Pro</div>
+          <div class="deal-price"><span class="deal-now">$599</span><span class="deal-was">$799</span></div>
+          <div class="deal-stars">★★★★★</div>
+        </div>
+
+        <!-- Headphones deal -->
+        <div class="deal-card">
+          <div class="deal-badge">-30%</div>
+          <div class="deal-img" style="background:#d1fae5">
+            <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+              <path d="M16 34Q16 16 32 16Q48 16 48 34" stroke="#1f2328" stroke-width="2.2" fill="none"/>
+              <rect x="10" y="33" width="10" height="17" rx="4" fill="#a7f3d0" stroke="#059669" stroke-width="2"/>
+              <rect x="44" y="33" width="10" height="17" rx="4" fill="#a7f3d0" stroke="#059669" stroke-width="2"/>
+              <line x1="20" y1="40" x2="44" y2="40" stroke="#6ee7b7" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="deal-name">Headphones</div>
+          <div class="deal-price"><span class="deal-now">$62</span><span class="deal-was">$89</span></div>
+          <div class="deal-stars">★★★★★</div>
+        </div>
+
+        <!-- Sneakers deal -->
+        <div class="deal-card">
+          <div class="deal-badge">-20%</div>
+          <div class="deal-img" style="background:#fef9c3">
+            <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+              <path d="M8 40Q10 30 22 28L36 26Q44 24 50 30L56 38Q50 44 8 44Z" fill="#fde68a" stroke="#ca8a04" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M22 28L26 20L32 24" stroke="#ca8a04" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <rect x="8" y="42" width="48" height="5" rx="2.5" fill="#fcd34d" stroke="#ca8a04" stroke-width="1.2"/>
+              <path d="M24 32 Q30 30 36 32" stroke="#92400e" stroke-width="1.2" fill="none"/>
+            </svg>
+          </div>
+          <div class="deal-name">Sneakers</div>
+          <div class="deal-price"><span class="deal-now">$51</span><span class="deal-was">$64</span></div>
+          <div class="deal-stars">★★★★★</div>
+        </div>
+
+        <!-- Smart Watch deal -->
+        <div class="deal-card">
+          <div class="deal-badge">-15%</div>
+          <div class="deal-img" style="background:#f1f5f9">
+            <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+              <rect x="23" y="7"  width="18" height="9" rx="2.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>
+              <rect x="23" y="48" width="18" height="9" rx="2.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="15" fill="#f8fafc" stroke="#64748b" stroke-width="1.8"/>
+              <circle cx="32" cy="32" r="11" fill="#fff" stroke="#94a3b8" stroke-width="1.2"/>
+              <line x1="32" y1="32" x2="32" y2="24" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+              <line x1="32" y1="32" x2="39" y2="35" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="32" cy="32" r="1.8" fill="#0f172a"/>
+            </svg>
+          </div>
+          <div class="deal-name">Smart Watch</div>
+          <div class="deal-price"><span class="deal-now">$101</span><span class="deal-was">$119</span></div>
+          <div class="deal-stars">★★★★★</div>
+        </div>
+
+        <!-- Handbag deal -->
+        <div class="deal-card">
+          <div class="deal-badge">-40%</div>
+          <div class="deal-img" style="background:#fce7f3">
+            <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+              <rect x="12" y="24" width="40" height="28" rx="5" fill="#fbcfe8" stroke="#db2777" stroke-width="2"/>
+              <path d="M22 24Q22 13 32 13Q42 13 42 24" stroke="#db2777" stroke-width="2" fill="none"/>
+              <circle cx="32" cy="38" r="3.5" fill="#db2777"/>
+              <rect x="16" y="34" width="32" height="4" rx="2" fill="#f9a8d4" opacity="0.5"/>
+            </svg>
+          </div>
+          <div class="deal-name">Handbag</div>
+          <div class="deal-price"><span class="deal-now">$29</span><span class="deal-was">$49</span></div>
+          <div class="deal-stars">★★★★☆</div>
+        </div>
+
+        <!-- Running Shoes deal -->
+        <div class="deal-card">
+          <div class="deal-badge">-18%</div>
+          <div class="deal-img" style="background:#dcfce7">
+            <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+              <path d="M6 42Q8 32 20 30L34 28Q42 26 48 32L54 40Q48 46 6 46Z" fill="#bbf7d0" stroke="#16a34a" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M20 30L24 22L30 26" stroke="#16a34a" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <rect x="6" y="44" width="48" height="5" rx="2.5" fill="#86efac" stroke="#16a34a" stroke-width="1.2"/>
+              <path d="M26 34 Q32 32 38 33" stroke="#15803d" stroke-width="1.2" fill="none"/>
+            </svg>
+          </div>
+          <div class="deal-name">Running Shoes</div>
+          <div class="deal-price"><span class="deal-now">$65</span><span class="deal-was">$79</span></div>
+          <div class="deal-stars">★★★★★</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Chat widget -->
+    <div class="chat-area">
+      <div class="chat-bar">
+        <span class="chat-bar-dot"></span>
+        Agent ready — ask about products, prices, deals or your order
+      </div>
+      <div id="root"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<footer>Made with IBM Bob</footer>
+
+<script>
+  var menuBtn = document.getElementById('menuBtn');
+  var sidebar  = document.getElementById('sidebar');
+  var overlay  = document.getElementById('overlay');
+
+  function openSidebar()  { sidebar.classList.add('open');  overlay.classList.add('open'); }
+  function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+
+  menuBtn.addEventListener('click', function() {
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+
+  document.querySelectorAll('.cat-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.cat-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  window.wxOConfiguration = {
+    orchestrationID: "adbd4bc5530c45a7bb0ca27289edbd04_1be47c3b-70a7-4615-917a-c9bab7f6c489",
+    hostURL: "https://au-syd.watson-orchestrate.cloud.ibm.com",
+    rootElementID: "root",
+    deploymentPlatform: "ibmcloud",
+    crn: "crn:v1:bluemix:public:watsonx-orchestrate:au-syd:a/adbd4bc5530c45a7bb0ca27289edbd04:1be47c3b-70a7-4615-917a-c9bab7f6c489::",
+    chatOptions: { agentId: "0f16ba82-7462-4c36-bb28-4635087857cd" }
+  };
+  setTimeout(function() {
+    var s = document.createElement('script');
+    s.src = window.wxOConfiguration.hostURL + '/wxochat/wxoLoader.js?embed=true';
+    s.addEventListener('load', function() { wxoLoader.init(); });
+    document.head.appendChild(s);
+  }, 0);
+</script>
+
+</body>
+</html>
